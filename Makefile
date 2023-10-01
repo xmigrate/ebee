@@ -22,7 +22,7 @@ install_go:
 	sudo tar -C /usr/local -xzf go1.20.2.linux-amd64.tar.gz
 
 set_path:
-	echo "export PATH=/usr/local/go/bin:${PATH}" | sudo tee -a $$HOME/.profile
+	echo "export PATH=/usr/local/go/bin:${PATH}" | sudo tee -a $HOME/.profile
 
 gen_vmlinux:
 	sudo bpftool btf dump file /sys/kernel/btf/vmlinux format c > ./bpf/headers/vmlinux.h
