@@ -15,7 +15,7 @@ import (
 )
 
 // $BPF_CLANG and $BPF_CFLAGS are set by the Makefile.
-//go:generate go run github.com/cilium/ebpf/cmd/bpf2go -target native bpf filegone.c -- -I./headers
+//go:generate go run github.com/cilium/ebpf/cmd/bpf2go -target native bpf filegone.c -- -I../bpf/headers
 
 type data_t struct {
 	Pid  uint32
@@ -33,7 +33,6 @@ func main() {
 	}
 
 	// Load pre-compiled programs and maps into the kernel.
-	// TODO: Implement your function for loading the eBPF object
 	objs := bpfObjects{}
 	if err := loadBpfObjects(&objs, nil); err != nil {
 		log.Fatalf("loading objects: %v", err)

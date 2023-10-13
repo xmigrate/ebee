@@ -1,6 +1,6 @@
-.PHONY: all update upgrade install_llvm install_clang install_bpftool install_go set_path source_profile
+.PHONY: all update upgrade install_llvm install_clang install_bpftool install_go install_bpftrace set_path source_profile
 
-install: update upgrade install_llvm install_clang install_bpftool install_go set_path source_profile 
+install: update upgrade install_llvm install_clang install_bpftool install_go install_bpftrace set_path source_profile 
 
 update:
 	sudo apt update -y
@@ -16,6 +16,9 @@ install_clang:
 
 install_bpftool:
 	sudo apt install -y bpftool
+
+install_bpftrace:
+	sudo apt install -y bpftrace
 
 install_go:
 	wget https://golang.org/dl/go1.20.2.linux-amd64.tar.gz
