@@ -28,7 +28,7 @@ install_bpftool:
 	sudo apt install -y bpftool || { echo "bpftool installation failed, falling back to linux-tools-common"; sudo apt install -y linux-tools-common; }
 
 set_path:
-	echo "export PATH=/usr/local/go/bin:${PATH}" | sudo tee -a $HOME/.profile || { echo "Setting PATH failed"; exit 1; }
+	echo "export PATH=/usr/local/go/bin/go:${PATH}" | sudo tee -a $HOME/.profile || { echo "Setting PATH failed"; exit 1; }
 
 source_profile:
 	source $HOME/.profile || { echo "Sourcing profile failed"; exit 1; }
