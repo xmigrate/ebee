@@ -2,9 +2,6 @@
 
 install: update upgrade install_llvm install_clang install_go install_bpftrace install_bpftool set_path source_profile
 
-.ONESHELL:
-SHELL := /bin/bash
-
 update:
 	sudo apt update -y || { echo "Update failed"; exit 1; }
 
@@ -33,5 +30,6 @@ set_path:
 source_profile:
 	source $HOME/.profile || { echo "Sourcing profile failed"; exit 1; }
 
+
 gen_vmlinux:
-	sudo /usr/local/go/bin/bpftool btf dump file /sys/kernel/btf/vmlinux format c > ./bpf/headers/vmlinux.h || { echo "Generating vmlinux.h failed"; exit 1; }
+	sudo bpftool btf dump file /sys/kernel/btf/vmlinux format c > ./bpf/headers/vmlinux.h
