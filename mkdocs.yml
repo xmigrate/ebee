@@ -110,11 +110,6 @@ nav:
 plugins:
   - search:
       lang: en
-  - git-revision-date-localized:
-      enable_creation_date: true
-      type: timeago
-  - minify:
-      minify_html: true
 
 markdown_extensions:
   # Python Markdown
