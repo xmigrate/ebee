@@ -1,6 +1,5 @@
 #include "common.h"
 
-
 struct data_t {
     u32 pid;
     char comm[16];
@@ -20,9 +19,9 @@ int trace_inode_free(struct trace_event_raw_ext4_free_inode *ctx) {
     }
     data->pid = bpf_get_current_pid_tgid();
     bpf_get_current_comm(&data->comm, sizeof(data->comm));
-    // Populate data with other information relevant to the event
     
     bpf_ringbuf_submit(data, 0); // Submit data to ring buffer
     return 0;
 }
+
 char _license[] SEC("license") = "GPL";

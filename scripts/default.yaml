@@ -1,0 +1,110 @@
+# Change cpu/memory if required
+cpus: 4
+memory: "10GiB"
+
+# Force x86_64 guest (OK on Apple Silicon via emulation; slower than native aarch64)
+arch: "x86_64"
+
+images:
+  - location: "https://cloud-images.ubuntu.com/releases/24.04/release/ubuntu-24.04-server-cloudimg-amd64.img"
+    arch: "x86_64"
+  - location: "https://cloud-images.ubuntu.com/releases/24.04/release/ubuntu-24.04-server-cloudimg-arm64.img"
+    arch: "aarch64"
+
+# Use reverse-sshfs to avoid flaky virtiofs RO mounts on macOS
+mountType: "reverse-sshfs"
+
+# Mounts the home directory (~) and /tmp/lima (writable)
+mounts:
+  - location: "~"
+    writable: true
+  - location: "/tmp/lima"
+    writable: true
+
+provision:
+  # Base toolchain + eBPF deps + quality-of-life
+  - mode: system
+    script: |
+      #!/bin/bash
+      set -euxo pipefail
+      export DEBIAN_FRONTEND=noninteractive
+
+      # Basic network wait to avoid early apt failures
+      for i in {1..10}; do
+        apt-get update && break || sleep 5
+      done
+
+      # Essentials
+      apt-get install -y --no-install-recommends \
+        apt-transport-https ca-certificates curl wget gnupg lsb-release \
+        software-properties-common git jq make build-essential pkg-config \
+        clang llvm \
+        linux-tools-common linux-tools-$(uname -r) \
+        libelf-dev libcap-dev libpcap-dev libbfd-dev binutils-dev zlib1g-dev \
+        python3-pip
+
+      # Headers (best effort in case exact version exists)
+      apt-get install -y --no-install-recommends linux-headers-$(uname -r) || true
+
+      # Convenience: ensure bpfcc-tools present
+      apt-get install -y --no-install-recommends bpfcc-tools
+
+      # Link bfd (some bpftool builds expect it here)
+      ln -sf /usr/lib/$(uname -m)-linux-gnu/libbfd.so /usr/lib/libbfd.so || true
+
+      # Ensure asm include expected by some tooling (noop if already present)
+      if [ ! -e /usr/include/asm ] && [ -d /usr/include/$(uname -m)-linux-gnu/asm ]; then
+        ln -sf /usr/include/$(uname -m)-linux-gnu/asm /usr/include/asm
+      fi
+
+  # Ubuntu debug symbols (ddebs) — optional but you asked for them
+  - mode: system
+    script: |
+      #!/bin/bash
+      set -euxo pipefail
+      export DEBIAN_FRONTEND=noninteractive
+
+      apt-get install -y --no-install-recommends ubuntu-dbgsym-keyring || true
+
+      codename="$(lsb_release -cs)"
+      cat >/etc/apt/sources.list.d/ddebs.list <<EOF
+      deb http://ddebs.ubuntu.com ${codename} main restricted universe multiverse
+      deb http://ddebs.ubuntu.com ${codename}-updates main restricted universe multiverse
+      deb http://ddebs.ubuntu.com ${codename}-proposed main restricted universe multiverse
+      EOF
+
+      for i in {1..10}; do
+        apt-get update && break || sleep 5
+      done
+
+      # bpftrace-dbgsym may not always be available; ignore failure
+      apt-get install -y bpftrace-dbgsym || true
+
+  # bpftool from source (latest)
+  - mode: system
+    script: |
+      #!/bin/bash
+      set -euxo pipefail
+      export DEBIAN_FRONTEND=noninteractive
+
+      # Build bpftool
+      tmpdir="$(mktemp -d)"
+      trap 'rm -rf "$tmpdir"' EXIT
+      cd "$tmpdir"
+      git clone --recurse-submodules https://github.com/libbpf/bpftool.git
+      cd bpftool
+      git submodule update --init
+      cd src
+      make -j"$(nproc)" install
+
+  # Golang (PPA) — ensure required package present first
+  - mode: system
+    script: |
+      #!/bin/bash
+      set -euxo pipefail
+      export DEBIAN_FRONTEND=noninteractive
+
+      apt-get install -y --no-install-recommends software-properties-common
+      add-apt-repository -y ppa:longsleep/golang-backports
+      apt-get update -y
+      apt-get install -y golang-go
