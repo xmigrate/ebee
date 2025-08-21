@@ -1,0 +1,183 @@
+site_name: "eBPF the Hard Way"
+site_description: "Learn eBPF development step by step - A comprehensive guide to building eBPF tools from scratch"
+site_author: "ebee contributors"
+site_url: "https://ebee.xmigrate.cloud"
+
+repo_name: "xmigrate/ebee"
+repo_url: "https://github.com/xmigrate/ebee"
+edit_uri: "edit/main/docs/"
+
+theme:
+  name: material
+  language: en
+  palette:
+    # Palette toggle for automatic mode
+    - media: "(prefers-color-scheme)"
+      toggle:
+        icon: material/brightness-auto
+        name: Switch to light mode
+    # Palette toggle for light mode
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: blue
+      accent: orange
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    # Palette toggle for dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: blue
+      accent: orange
+      toggle:
+        icon: material/brightness-4
+        name: Switch to system preference
+  features:
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.sections
+    - navigation.expand
+    - navigation.path
+    - navigation.indexes
+    - toc.follow
+    - toc.integrate
+    - navigation.top
+    - search.suggest
+    - search.highlight
+    - search.share
+    - content.code.copy
+    - content.code.annotate
+    - content.tabs.link
+    - content.tooltips
+  icon:
+    repo: fontawesome/brands/github
+    edit: material/pencil
+    view: material/eye
+
+nav:
+  - Home: 
+    - Overview: index.md
+    - Quick Start: getting-started/quick-start.md
+  
+  - Getting Started:
+    - What is eBPF?: getting-started/what-is-ebpf.md
+    - Prerequisites: getting-started/prerequisites.md
+    - Development Setup: getting-started/development-setup.md
+  
+  - eBPF Fundamentals:
+    - Core Concepts: fundamentals/concepts.md
+    - eBPF Virtual Machine: fundamentals/vm-and-verifier.md
+    - Program Types: fundamentals/program-types.md
+    - Maps and Data Structures: fundamentals/maps.md
+    - Helper Functions: fundamentals/helpers.md
+    - Program Lifecycle: fundamentals/lifecycle.md
+  
+  - Your First Tool:
+    - Architecture Overview: first-tool/architecture.md
+    - Writing eBPF C Code: first-tool/ebpf-program.md
+    - Go Integration: first-tool/go-userspace.md
+    - Build and Test: first-tool/build-test.md
+  
+  - Tool Tutorials:
+    - Process Monitoring:
+      - execsnoop: tools/execsnoop.md
+    - File System Monitoring:
+      - rmdetect: tools/rmdetect.md
+    - Network Monitoring (Coming Soon):
+      - tcpconnect: tools/tcpconnect.md
+      - tcpaccept: tools/tcpaccept.md
+    - Performance Analysis (Coming Soon):
+      - biolatency: tools/biolatency.md
+      - funclatency: tools/funclatency.md
+  
+  - Advanced Topics:
+    - Performance Optimization: advanced/performance.md
+    - Security Considerations: advanced/security.md
+    - Debugging Techniques: advanced/debugging.md
+    - Custom Program Types: advanced/custom-types.md
+  
+  - Reference:
+    - API Reference: reference/api.md
+    - Troubleshooting: reference/troubleshooting.md
+    - Best Practices: reference/best-practices.md
+    - Glossary: reference/glossary.md
+  
+  - Contributing:
+    - How to Contribute: contributing/guide.md
+    - Tool Template: contributing/template.md
+    - Code Standards: contributing/standards.md
+
+plugins:
+  - search:
+      lang: en
+  - git-revision-date-localized:
+      enable_creation_date: true
+      type: timeago
+  - minify:
+      minify_html: true
+
+markdown_extensions:
+  # Python Markdown
+  - abbr
+  - admonition
+  - attr_list
+  - def_list
+  - footnotes
+  - md_in_html
+  - toc:
+      permalink: true
+      title: On this page
+  
+  # Python Markdown Extensions
+  - pymdownx.arithmatex:
+      generic: true
+  - pymdownx.betterem:
+      smart_enable: all
+  - pymdownx.caret
+  - pymdownx.details
+  - pymdownx.emoji:
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.keys
+  - pymdownx.magiclink:
+      repo_url_shorthand: true
+      user: squidfunk
+      repo: mkdocs-material
+  - pymdownx.mark
+  - pymdownx.smartsymbols
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - pymdownx.tilde
+
+extra:
+  version:
+    provider: mike
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/xmigrate/ebee
+      name: GitHub Repository
+    - icon: fontawesome/brands/twitter
+      link: https://twitter.com/xmigrate
+      name: Follow on Twitter
+
+extra_css:
+  - stylesheets/extra.css
+
+extra_javascript:
+  - javascripts/extra.js
+
+copyright: >
+  Copyright &copy; 2024 ebee contributors –
+  <a href="#__consent">Change cookie settings</a>

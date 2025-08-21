@@ -1,9 +1,10 @@
-package main
+package cmd
 
 import (
 	"bytes"
 	"encoding/binary"
 	"errors"
+	"fmt"
 	"log"
 	"os"
 	"os/signal"
@@ -12,17 +13,41 @@ import (
 	"github.com/cilium/ebpf/link"
 	"github.com/cilium/ebpf/ringbuf"
 	"github.com/cilium/ebpf/rlimit"
+	"github.com/spf13/cobra"
 )
 
-// $BPF_CLANG and $BPF_CFLAGS are set by the Makefile.
-//go:generate go run github.com/cilium/ebpf/cmd/bpf2go -target native bpf filegone.c -- -I../bpf/headers
+//go:generate go run github.com/cilium/ebpf/cmd/bpf2go -target native rmdetect ../bpf/rmdetect.c -- -I../bpf/headers
 
 type data_t struct {
 	Pid  uint32
 	Comm [16]byte
 }
 
-func main() {
+var rmdetectCmd = &cobra.Command{
+	Use:   "rmdetect",
+	Short: "Monitor file deletions in real-time",
+	Long: `rmdetect monitors file deletions by attaching to the ext4_free_inode tracepoint.
+It captures the process ID and command name of processes that delete files.
+
+Examples:
+  ebee rmdetect                    # Monitor all file deletions
+  ebee rmdetect --pid 1234         # Monitor deletions by specific PID
+  ebee rmdetect --comm "rm"        # Monitor deletions by specific command`,
+	Run: runRmdetect,
+}
+
+var (
+	pidFilter  uint32
+	commFilter string
+)
+
+func init() {
+	rmdetectCmd.Flags().Uint32Var(&pidFilter, "pid", 0, "Filter by process ID")
+	rmdetectCmd.Flags().StringVar(&commFilter, "comm", "", "Filter by command name")
+	rootCmd.AddCommand(rmdetectCmd)
+}
+
+func runRmdetect(cmd *cobra.Command, args []string) {
 	// Subscribe to signals for terminating the program.
 	stopper := make(chan os.Signal, 1)
 	signal.Notify(stopper, os.Interrupt, syscall.SIGTERM)
@@ -33,8 +58,8 @@ func main() {
 	}
 
 	// Load pre-compiled programs and maps into the kernel.
-	objs := bpfObjects{}
-	if err := loadBpfObjects(&objs, nil); err != nil {
+	objs := rmdetectObjects{}
+	if err := loadRmdetectObjects(&objs, nil); err != nil {
 		log.Fatalf("loading objects: %v", err)
 	}
 	defer objs.Close()
@@ -45,6 +70,10 @@ func main() {
 		log.Fatalf("Failed to attach tracepoint: %s", err)
 	}
 	defer tpEnterLink.Close()
+
+	fmt.Println("Monitoring file deletions... Press Ctrl+C to stop")
+	fmt.Println("PID\tCommand")
+	fmt.Println("---\t-------")
 
 	// Initialize ring buffer
 	events := objs.Events
@@ -73,10 +102,20 @@ func main() {
 			}
 
 			comm := string(bytes.Trim(data.Comm[:], "\x00"))
-			log.Printf("Event received: PID: %d, Comm: %s\n", data.Pid, comm)
+
+			// Apply filters
+			if pidFilter != 0 && data.Pid != pidFilter {
+				continue
+			}
+			if commFilter != "" && comm != commFilter {
+				continue
+			}
+
+			fmt.Printf("%d\t%s\n", data.Pid, comm)
 		}
 	}()
 
 	// Wait for interrupt
 	<-stopper
+	fmt.Println("\nStopping file deletion monitor...")
 }
