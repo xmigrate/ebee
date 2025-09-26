@@ -35,36 +35,63 @@ By working through this guide, you'll master:
     - Building userspace applications in Go
     - Debugging eBPF programs
     - Performance optimization techniques
+    - Cross-platform development
+    - Production deployment strategies
+
+=== "Advanced Topics"
+    - CO-RE (Compile Once, Run Everywhere) development
+    - Network packet processing with XDP/TC
+    - Security monitoring with LSM hooks
+    - Testing strategies and frameworks
+    - Error handling and memory management
 
 === "Real-World Tools"
     - Process execution monitoring
     - File system activity tracking
     - Network connection analysis
+    - Security event correlation
     - Performance profiling tools
 
 ## 🚀 Quick Start
 
 Ready to dive in? Here's your learning path:
 
+### 🌱 **Beginners**
 1. **[Set up your environment](getting-started/development-setup.md)** - Get everything installed
 2. **[Learn eBPF basics](fundamentals/concepts.md)** - Understand the core concepts
 3. **[Build your first tool](first-tool/architecture.md)** - Create a complete eBPF application
-4. **[Explore advanced tools](tools/execsnoop.md)** - Learn from real examples
+4. **[Explore basic tools](tools/execsnoop.md)** - Learn from working examples
+
+### 🚀 **Advanced Users**
+5. **[Master CO-RE development](advanced/core-btf.md)** - Build portable eBPF programs
+6. **[Network programming](advanced/network-ebpf.md)** - XDP and TC packet processing
+7. **[Security monitoring](advanced/security-monitoring.md)** - LSM hooks and event correlation
+8. **[Testing strategies](advanced/testing.md)** - Comprehensive testing frameworks
 
 !!! success "Estimated Time"
     - **Quick setup**: 30 minutes
     - **First tool**: 2-3 hours
-    - **Complete guide**: 1-2 weeks (at your own pace)
+    - **Basic proficiency**: 1-2 weeks
+    - **Advanced topics**: 2-4 weeks
+    - **Production mastery**: 1-2 months (at your own pace)
 
 ## 🛠️ Tools You'll Build
 
+### Basic Tools
 | Tool | Difficulty | Category | What It Does |
 |------|-----------|----------|--------------|
 | **[execsnoop](tools/execsnoop.md)** | 🟢 Beginner | Process Monitoring | Monitor process executions in real-time |
 | **[rmdetect](tools/rmdetect.md)** | 🟢 Beginner | File System | Monitor file deletions |
 | **[opensnoop](tools/opensnoop.md)** | 🟡 Intermediate | File System | Monitor file opens |
+
+### Advanced Tools
+| Tool | Difficulty | Category | What It Does |
+|------|-----------|----------|--------------|
 | **[tcpconnect](tools/tcpconnect.md)** | 🟡 Intermediate | Network | Monitor TCP connections |
 | **[biolatency](tools/biolatency.md)** | 🔴 Advanced | Performance | Measure block I/O latency |
+| **[DDoS Protection](advanced/network-ebpf.md#ddos-protection)** | 🔴 Advanced | Network Security | XDP-based DDoS mitigation |
+| **[Load Balancer](advanced/network-ebpf.md#load-balancer)** | 🔴 Advanced | Network | Layer 4 load balancing with XDP |
+| **[Security Monitor](advanced/security-monitoring.md#lsm-examples)** | 🔴 Advanced | Security | LSM-based security event detection |
 
 ## 📋 Prerequisites
 
@@ -145,15 +172,44 @@ Choose your path:
 
     [:octicons-arrow-right-24: Build First Tool](first-tool/architecture.md)
 
--   :material-lightning-bolt: **Just Show Me Code**
+-   :material-lightning-bolt: **Advanced Developer**
 
     ---
 
-    Dive into the tool tutorials and learn by example.
+    Explore advanced topics like CO-RE, XDP, LSM, and testing strategies.
 
-    [:octicons-arrow-right-24: See Tools](tools/execsnoop.md)
+    [:octicons-arrow-right-24: Advanced Topics](advanced/core-btf.md)
+
+-   :material-wrench: **Production Ready**
+
+    ---
+
+    Learn debugging, testing, and deployment strategies.
+
+    [:octicons-arrow-right-24: Production Guide](reference/troubleshooting.md)
 
 </div>
+
+## 📚 Documentation Structure
+
+### 📖 **Core Learning Path**
+- **[Getting Started](getting-started/what-is-ebpf.md)** - Environment setup and eBPF basics
+- **[Fundamentals](fundamentals/concepts.md)** - Core eBPF concepts and architecture
+- **[First Tool](first-tool/architecture.md)** - Step-by-step tool creation
+- **[Tools](tools/execsnoop.md)** - Complete working examples
+
+### 🚀 **Advanced Topics**
+- **[CO-RE & BTF](advanced/core-btf.md)** - Portable eBPF development
+- **[Network Programming](advanced/network-ebpf.md)** - XDP and TC packet processing
+- **[Security Monitoring](advanced/security-monitoring.md)** - LSM hooks and event correlation
+- **[Testing Strategies](advanced/testing.md)** - Comprehensive testing frameworks
+- **[Performance](advanced/performance.md)** - Optimization techniques
+
+### 📋 **Reference Materials**
+- **[Troubleshooting](reference/troubleshooting.md)** - Debug techniques and common issues
+- **[Best Practices](reference/best-practices.md)** - Production-ready patterns
+- **[API Reference](reference/api.md)** - Helper functions and APIs
+- **[Glossary](reference/glossary.md)** - eBPF terminology
 
 ## 🆘 Need Help?
 

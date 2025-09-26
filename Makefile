@@ -1,4 +1,4 @@
-.PHONY: all update upgrade install_llvm install_clang install_bpftool install_go install_bpftrace set_path source_profile build generate clean
+.PHONY: all update upgrade install_llvm install_clang install_bpftool install_go install_bpftrace set_path source_profile build generate clean docs-install docs-serve docs-build docs-deploy docs-clean docs-help
 
 install: update upgrade install_llvm install_clang install_go install_bpftrace install_bpftool set_path source_profile
 
@@ -78,3 +78,45 @@ create-tool:
 	echo "3. Update Makefile generate target"; \
 	echo "4. Update cmd/root.go to add the command"; \
 	echo "5. Customize docs/tools/$$toolname.md"
+
+# Documentation targets
+docs-install:
+	@echo "Installing MkDocs and dependencies..."
+	pip3 install mkdocs-material
+	pip3 install mkdocs-mermaid2-plugin
+	@echo "✅ MkDocs installation complete"
+
+docs-serve: docs-install
+	@echo "🚀 Starting MkDocs development server..."
+	@echo "📖 Documentation will be available at: http://127.0.0.1:8000"
+	@echo "📝 Edit files in docs/ and see changes in real-time"
+	@echo "🛑 Press Ctrl+C to stop the server"
+	mkdocs serve
+
+docs-build: docs-install
+	@echo "🔨 Building static documentation..."
+	mkdocs build
+	@echo "✅ Documentation built in site/ directory"
+
+docs-deploy: docs-build
+	@echo "🚀 Deploying documentation to GitHub Pages..."
+	mkdocs gh-deploy --force
+	@echo "✅ Documentation deployed successfully"
+
+docs-clean:
+	@echo "🧹 Cleaning documentation build files..."
+	rm -rf site/
+	@echo "✅ Documentation build files cleaned"
+
+# Help target for documentation
+docs-help:
+	@echo "📚 Documentation Commands:"
+	@echo ""
+	@echo "  make docs-install    - Install MkDocs and dependencies"
+	@echo "  make docs-serve      - Run local development server (http://127.0.0.1:8000)"
+	@echo "  make docs-build      - Build static documentation"
+	@echo "  make docs-deploy     - Deploy to GitHub Pages"
+	@echo "  make docs-clean      - Clean build files"
+	@echo "  make docs-help       - Show this help"
+	@echo ""
+	@echo "💡 Quick start: Run 'make docs-serve' to view docs locally"

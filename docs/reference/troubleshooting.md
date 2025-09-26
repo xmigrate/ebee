@@ -656,7 +656,451 @@ fi
 echo "=== End Debug Info ==="
 ```
 
-## 📋 Quick Troubleshooting Checklist
+## 🧠 Advanced Debugging Techniques
+
+### 1. Memory Access Pattern Analysis
+
+```c
+// Debug memory access patterns
+#ifdef DEBUG_MEMORY
+struct memory_debug {
+    u64 access_count;
+    u64 null_access_count;
+    u64 bounds_violations;
+};
+
+struct {
+    __uint(type, BPF_MAP_TYPE_ARRAY);
+    __type(key, u32);
+    __type(value, struct memory_debug);
+    __uint(max_entries, 1);
+} memory_debug_stats SEC(".maps");
+
+static inline void track_memory_access(void *ptr, const char *location) {
+    u32 key = 0;
+    struct memory_debug *stats = bpf_map_lookup_elem(&memory_debug_stats, &key);
+    if (!stats) return;
+
+    stats->access_count++;
+    if (!ptr) {
+        stats->null_access_count++;
+        bpf_trace_printk("NULL access at %s\n", location);
+    }
+}
+
+#define SAFE_ACCESS(ptr, location) do { \
+    track_memory_access(ptr, location); \
+    if (!ptr) return 0; \
+} while(0)
+#else
+#define SAFE_ACCESS(ptr, location) if (!ptr) return 0
+#endif
+```
+
+### 2. Stack Usage Monitoring
+
+```c
+// Monitor stack usage (eBPF has 512-byte limit)
+static inline void check_stack_usage(void) {
+    char stack_marker[100];  // Test stack allocation
+
+    // This helps identify stack pressure
+    bpf_trace_printk("Stack check: %p\n", &stack_marker);
+}
+
+// Optimize stack usage
+struct optimized_event {
+    u32 pid;
+    u32 data_len;
+    char data[];  // Variable length instead of fixed arrays
+} __attribute__((packed));
+```
+
+### 3. Cross-Kernel Version Debugging
+
+```c
+// Handle kernel version differences
+#include <linux/version.h>
+
+SEC("kprobe/security_file_open")
+int debug_file_security(struct pt_regs *ctx) {
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 8, 0)
+    // Modern kernel - use new security hooks
+    struct file *file = (struct file *)PT_REGS_PARM1(ctx);
+    bpf_trace_printk("Modern security hook\n");
+#elif LINUX_VERSION_CODE >= KERNEL_VERSION(4, 19, 0)
+    // Intermediate kernel version
+    bpf_trace_printk("Legacy security hook\n");
+#else
+    // Very old kernel - different approach needed
+    bpf_trace_printk("Ancient kernel fallback\n");
+#endif
+
+    return 0;
+}
+```
+
+## 🔬 Error Handling Patterns
+
+### 1. Comprehensive Error Tracking
+
+```c
+// Error code enumeration
+enum ebpf_error_codes {
+    ERR_NONE = 0,
+    ERR_NULL_POINTER = 1,
+    ERR_BOUNDS_CHECK = 2,
+    ERR_MAP_LOOKUP = 3,
+    ERR_MAP_UPDATE = 4,
+    ERR_MEMORY_READ = 5,
+    ERR_STRING_READ = 6,
+    ERR_RING_BUFFER = 7,
+};
+
+struct error_context {
+    u32 error_code;
+    u32 line_number;
+    u32 pid;
+    u64 timestamp;
+    char function[32];
+};
+
+struct {
+    __uint(type, BPF_MAP_TYPE_RINGBUF);
+    __uint(max_entries, 1 << 16);
+} error_events SEC(".maps");
+
+#define REPORT_ERROR(code, line, func) do { \
+    struct error_context *err = bpf_ringbuf_reserve(&error_events, sizeof(*err), 0); \
+    if (err) { \
+        err->error_code = code; \
+        err->line_number = line; \
+        err->pid = bpf_get_current_pid_tgid() >> 32; \
+        err->timestamp = bpf_ktime_get_ns(); \
+        bpf_probe_read_str(&err->function, sizeof(err->function), func); \
+        bpf_ringbuf_submit(err, 0); \
+    } \
+} while(0)
+
+// Usage example
+SEC("kprobe/vfs_read")
+int monitored_vfs_read(struct pt_regs *ctx) {
+    struct file *file = (struct file *)PT_REGS_PARM1(ctx);
+
+    if (!file) {
+        REPORT_ERROR(ERR_NULL_POINTER, __LINE__, __func__);
+        return 0;
+    }
+
+    char filename[256];
+    int ret = bpf_probe_read_kernel_str(&filename, sizeof(filename), "test");
+    if (ret < 0) {
+        REPORT_ERROR(ERR_STRING_READ, __LINE__, __func__);
+        return 0;
+    }
+
+    return 0;
+}
+```
+
+### 2. Map Operation Error Handling
+
+```c
+// Safe map operations with error handling
+static inline int safe_map_update(void *map, void *key, void *value, u64 flags) {
+    int ret = bpf_map_update_elem(map, key, value, flags);
+
+    switch (ret) {
+        case 0:
+            return 0;  // Success
+        case -E2BIG:
+            REPORT_ERROR(ERR_MAP_UPDATE, __LINE__, "map_full");
+            break;
+        case -ENOMEM:
+            REPORT_ERROR(ERR_MAP_UPDATE, __LINE__, "out_of_memory");
+            break;
+        case -EEXIST:
+            // Key already exists - might be OK depending on use case
+            break;
+        default:
+            REPORT_ERROR(ERR_MAP_UPDATE, __LINE__, "unknown_error");
+    }
+
+    return ret;
+}
+
+// Usage with error checking
+SEC("tracepoint/syscalls/sys_enter_openat")
+int safe_openat_trace(struct trace_event_raw_sys_enter *ctx) {
+    u32 pid = bpf_get_current_pid_tgid() >> 32;
+    u64 timestamp = bpf_ktime_get_ns();
+
+    if (safe_map_update(&process_timestamps, &pid, &timestamp, BPF_ANY) != 0) {
+        // Error already reported, decide how to handle
+        return 0;  // Continue or return error
+    }
+
+    return 0;
+}
+```
+
+### 3. Verifier Failure Pattern Analysis
+
+```c
+// Common patterns that cause verifier failures
+
+// Pattern 1: Unvalidated array access
+int unsafe_array_access(int index) {
+    int data[10];
+    return data[index];  // ❌ Verifier doesn't know bounds
+}
+
+int safe_array_access(int index) {
+    int data[10];
+    if (index < 0 || index >= 10) return 0;  // ✅ Bounds check
+    return data[index];
+}
+
+// Pattern 2: Uninitialized variable usage
+int unsafe_var_usage(void) {
+    int value;  // ❌ Uninitialized
+    return value * 2;
+}
+
+int safe_var_usage(void) {
+    int value = 0;  // ✅ Initialized
+    return value * 2;
+}
+
+// Pattern 3: Complex pointer arithmetic
+struct complex_struct {
+    int field1;
+    char field2[100];
+    int field3;
+};
+
+int unsafe_pointer_math(struct complex_struct *ptr) {
+    // ❌ Complex offset calculation
+    char *target = (char *)ptr + sizeof(int) + 50;
+    return *target;
+}
+
+int safe_struct_access(struct complex_struct *ptr) {
+    if (!ptr) return 0;
+    // ✅ Use proper struct access
+    return ptr->field2[50];  // With bounds checking in real code
+}
+```
+
+## 🏗️ Memory Management Best Practices
+
+### 1. Stack Optimization
+
+```c
+// eBPF stack is limited to 512 bytes
+struct stack_heavy {
+    char big_buffer[400];    // Takes most of stack
+    int small_data[10];      // May cause stack overflow
+};
+
+// ✅ Better approach: Use smaller stack, maps for large data
+struct stack_light {
+    u32 key;
+    u16 size;
+    char small_buffer[32];   // Keep stack usage minimal
+};
+
+// Use map for large temporary storage
+struct {
+    __uint(type, BPF_MAP_TYPE_PERCPU_ARRAY);
+    __type(key, u32);
+    __type(value, char[4096]);
+    __uint(max_entries, 1);
+} temp_storage SEC(".maps");
+
+SEC("kprobe/large_data_handler")
+int optimized_handler(struct pt_regs *ctx) {
+    u32 key = 0;
+    char *large_buffer = bpf_map_lookup_elem(&temp_storage, &key);
+    if (!large_buffer) return 0;
+
+    // Use large_buffer for temporary storage
+    bpf_probe_read_kernel_str(large_buffer, 4096, some_pointer);
+
+    return 0;
+}
+```
+
+### 2. Memory Access Patterns
+
+```c
+// Efficient memory access patterns
+struct efficient_reader {
+    u32 pid;
+    u32 offset;
+    u32 size;
+};
+
+// ❌ Multiple small reads
+int inefficient_reads(void *source) {
+    char byte1, byte2, byte3, byte4;
+    bpf_probe_read_kernel(&byte1, 1, source);
+    bpf_probe_read_kernel(&byte2, 1, source + 1);
+    bpf_probe_read_kernel(&byte3, 1, source + 2);
+    bpf_probe_read_kernel(&byte4, 1, source + 3);
+    return (byte1 << 24) | (byte2 << 16) | (byte3 << 8) | byte4;
+}
+
+// ✅ Single larger read
+int efficient_read(void *source) {
+    u32 value;
+    if (bpf_probe_read_kernel(&value, sizeof(value), source) == 0) {
+        return value;
+    }
+    return 0;
+}
+```
+
+## 🌐 Cross-Platform Considerations
+
+### 1. Architecture-Specific Code
+
+```c
+// Handle different architectures
+#ifdef __x86_64__
+#define ARCH_SPECIFIC_OFFSET 8
+#elif defined(__aarch64__)
+#define ARCH_SPECIFIC_OFFSET 16
+#elif defined(__riscv)
+#define ARCH_SPECIFIC_OFFSET 12
+#else
+#define ARCH_SPECIFIC_OFFSET 8  // Default
+#endif
+
+// Architecture-aware structure access
+struct platform_specific {
+    u64 common_field;
+#ifdef __x86_64__
+    u64 x86_specific;
+#elif defined(__aarch64__)
+    u64 arm_specific1;
+    u64 arm_specific2;
+#endif
+};
+```
+
+### 2. Kernel Version Compatibility
+
+```c
+// Feature detection at compile time
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 2, 0)
+#define HAS_BPF_CORE_READ 1
+#else
+#define HAS_BPF_CORE_READ 0
+#endif
+
+// Runtime feature detection
+static inline bool has_btf_support(void) {
+    // Check if BTF is available at runtime
+    return bpf_core_type_exists(struct task_struct);
+}
+
+// Conditional compilation for features
+SEC("kprobe/test_function")
+int adaptive_program(struct pt_regs *ctx) {
+#if HAS_BPF_CORE_READ
+    // Use modern CO-RE approach
+    struct task_struct *task = (struct task_struct *)bpf_get_current_task();
+    u32 pid = BPF_CORE_READ(task, pid);
+#else
+    // Fallback for older kernels
+    u32 pid = bpf_get_current_pid_tgid() >> 32;
+#endif
+
+    bpf_trace_printk("PID: %d\n", pid);
+    return 0;
+}
+```
+
+### 3. Distribution-Specific Considerations
+
+```go
+// Go code for handling distribution differences
+package main
+
+import (
+    "os"
+    "strings"
+)
+
+type DistributionInfo struct {
+    Name    string
+    Version string
+    Kernel  string
+}
+
+func detectDistribution() (*DistributionInfo, error) {
+    // Check /etc/os-release
+    data, err := os.ReadFile("/etc/os-release")
+    if err != nil {
+        return nil, err
+    }
+
+    lines := strings.Split(string(data), "\n")
+    info := &DistributionInfo{}
+
+    for _, line := range lines {
+        if strings.HasPrefix(line, "ID=") {
+            info.Name = strings.Trim(strings.TrimPrefix(line, "ID="), "\"")
+        } else if strings.HasPrefix(line, "VERSION_ID=") {
+            info.Version = strings.Trim(strings.TrimPrefix(line, "VERSION_ID="), "\"")
+        }
+    }
+
+    return info, nil
+}
+
+func adjustForDistribution(info *DistributionInfo) error {
+    switch info.Name {
+    case "ubuntu":
+        return handleUbuntuSpecifics(info.Version)
+    case "rhel", "centos":
+        return handleRHELSpecifics(info.Version)
+    case "alpine":
+        return handleAlpineSpecifics(info.Version)
+    default:
+        return handleGenericLinux()
+    }
+}
+```
+
+## 📋 Enhanced Quick Troubleshooting Checklist
+
+### Advanced Debugging Checklist
+
+- [ ] **Memory Management**
+  - [ ] Stack usage under 512 bytes
+  - [ ] No uninitialized variables
+  - [ ] Proper bounds checking for all array accesses
+  - [ ] Safe pointer arithmetic
+
+- [ ] **Error Handling**
+  - [ ] All map operations check return values
+  - [ ] All memory reads use safe helpers
+  - [ ] Error reporting mechanism in place
+  - [ ] Graceful degradation on failures
+
+- [ ] **Cross-Platform Compatibility**
+  - [ ] Architecture-specific code properly guarded
+  - [ ] Kernel version compatibility checked
+  - [ ] Distribution-specific adjustments made
+  - [ ] Fallback mechanisms for missing features
+
+- [ ] **Performance Considerations**
+  - [ ] Event filtering implemented in kernel space
+  - [ ] Map types chosen appropriately
+  - [ ] Ring buffer size optimized for workload
+  - [ ] No unnecessary helper function calls
 
 ### Before Seeking Help
 
@@ -668,6 +1112,9 @@ echo "=== End Debug Info ==="
 - [ ] **Test event generation** manually
 - [ ] **Check ring buffer utilization**
 - [ ] **Review recent changes** that might have broken functionality
+- [ ] **Validate memory access patterns**
+- [ ] **Check for proper error handling**
+- [ ] **Verify cross-platform compatibility**
 
 ### Getting Help
 
@@ -675,22 +1122,33 @@ When reporting issues, include:
 
 1. **System Information**:
    - Kernel version (`uname -r`)
+   - Architecture (`uname -m`)
    - Distribution and version
    - eBPF program type and attachment point
+   - BTF availability
 
 2. **Error Messages**:
    - Complete compilation errors
    - Verifier error messages from `dmesg`
    - Runtime error messages
+   - Memory access violations
 
 3. **Minimal Reproduction**:
    - Simplified code that demonstrates the issue
    - Steps to reproduce the problem
    - Expected vs actual behavior
+   - Error handling code if applicable
 
 4. **Environment Details**:
    - Running as root/sudo?
    - Any security frameworks (SELinux, AppArmor)?
    - Container environment?
+   - Cross-compilation targets
+
+5. **Performance Context**:
+   - Expected vs actual performance
+   - Memory usage patterns
+   - Event frequency and volume
+   - System resource utilization
 
 Following this systematic approach will help you quickly identify and resolve most eBPF development issues! 🔧

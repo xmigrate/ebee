@@ -134,13 +134,31 @@ Each tool should include:
 
 ## 📖 Documentation
 
-Detailed documentation for each tool and eBPF concepts can be found in the `docs/` folder:
+Comprehensive documentation covering everything from basics to advanced production deployment:
 
-- [Development Setup](docs/development-setup.md)
-- [eBPF Fundamentals](docs/ebpf-fundamentals.md)
-- [Tool Documentation](docs/tools/)
-  - [rmdetect](docs/tools/rmdetect.md)
-  - [execsnoop](docs/tools/execsnoop.md)
+### 📚 **Learning Materials**
+- **[Complete Documentation](docs/)** - Full learning guide
+- **[Getting Started](docs/getting-started/what-is-ebpf.md)** - Environment setup and eBPF introduction
+- **[Core Concepts](docs/fundamentals/concepts.md)** - eBPF fundamentals and architecture
+- **[First Tool Tutorial](docs/first-tool/architecture.md)** - Step-by-step tool creation
+
+### 🚀 **Advanced Topics**
+- **[CO-RE & BTF](docs/advanced/core-btf.md)** - Portable eBPF development with CO-RE
+- **[Network Programming](docs/advanced/network-ebpf.md)** - XDP, TC, packet processing
+- **[Security Monitoring](docs/advanced/security-monitoring.md)** - LSM hooks, security events
+- **[Testing Strategies](docs/advanced/testing.md)** - Unit/integration testing frameworks
+- **[Performance Optimization](docs/advanced/performance.md)** - Production optimization techniques
+
+### 🛠️ **Tool Documentation**
+- **[execsnoop](docs/tools/execsnoop.md)** - Process execution monitoring
+- **[rmdetect](docs/tools/rmdetect.md)** - File deletion detection
+- **[Network Tools](docs/advanced/network-ebpf.md)** - DDoS protection, load balancing
+- **[Security Tools](docs/advanced/security-monitoring.md)** - File access, process monitoring
+
+### 📋 **Reference & Troubleshooting**
+- **[Troubleshooting Guide](docs/reference/troubleshooting.md)** - Debug techniques, common issues
+- **[Best Practices](docs/reference/best-practices.md)** - Production deployment patterns
+- **[API Reference](docs/reference/api.md)** - Helper functions and APIs
 
 ## 🏗️ Project Structure
 
