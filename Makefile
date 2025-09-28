@@ -37,6 +37,7 @@ gen_vmlinux:
 generate:
 	go generate ./cmd/rmdetect.go
 	go generate ./cmd/execsnoop.go
+	go generate ./cmd/tcpconnect.go
 
 # Build the ebee CLI application
 build: generate
@@ -59,6 +60,9 @@ run-rmdetect: build
 
 run-execsnoop: build
 	sudo ./ebee execsnoop
+
+run-tcpconnect: build
+	sudo ./ebee tcpconnect
 
 # Create new tool boilerplate
 create-tool:

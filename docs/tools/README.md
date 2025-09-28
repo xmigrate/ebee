@@ -16,6 +16,11 @@ This directory contains detailed documentation for each eBPF tool in the ebee pr
   - Captures process ID, command name, and arguments
   - Useful for security monitoring and process analysis
 
+- **[tcpconnect](tcpconnect.md)** - Monitor TCP connections in real-time
+  - Attaches to `sys_enter_connect` tracepoint
+  - Captures process ID, command name, and destination IP/port
+  - Useful for network monitoring and security analysis
+
 ### Template
 
 - **[template](template.md)** - Template for creating new tool documentation
@@ -33,9 +38,9 @@ Tools that monitor process lifecycle events:
 - **execsnoop** - Process execution monitoring
 
 ### Network Monitoring
-Tools that monitor network operations (future):
+Tools that monitor network operations:
 - **tcpconnect** - TCP connection monitoring
-- **tcpaccept** - TCP accept monitoring
+- **tcpaccept** - TCP accept monitoring (future)
 
 ### System Monitoring
 Tools that monitor system-level events (future):

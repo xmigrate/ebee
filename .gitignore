@@ -45,3 +45,9 @@ ebee
 ehthumbs.db
 Thumbs.db
 venv/
+
+# Video production files (private content)
+video-scripts/
+video-production-plan.md
+video-production-templates.md
+intro-video-script.md
